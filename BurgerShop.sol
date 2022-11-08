@@ -10,7 +10,8 @@ pragma solidity >=0.7.0 <0.9.0;
     eth
 */
 
-contract BurgerShop{                
+contract BurgerShop{    
+
     // variable normalCost-> cost of normal burger
     // variable deluxeCost-> cost of deluxeBurger
     uint256 public normalCost = 0.2 ether;
@@ -21,6 +22,33 @@ contract BurgerShop{
     // param2 _cost -> the cost of the burger intended to buy
     event bugerBought(address indexed _from, uint256 cost);
 
+    enum Stages{
+        orderReady,
+        readyMade,
+        delivered
+    }
+
+    Stages public currentStage = Stages.orderReady;
+
+    modifier isInStage(Stages _stage){
+        require(currentStage == _stage, "Not yet ready");
+        _;
+    }
+
+
+
+    function updateStage(Stages _stage) public {
+        currentStage = _stage;
+    }
+    function madeBurger() public isInStage(Stages.readyMade){
+        updateStage(Stages.delivered);
+    }
+
+    function deliveredBurger() public isInStage(Stages.delivered){
+        updateStage(Stages.orderReady);
+    }
+
+
     // title modifier for some guard checks
     // param1 -> _cost ensured that the correct cost of the burger is inserted
     // require checks if the value of burger inserted is > or = to the cost of the available burgers
@@ -28,17 +56,17 @@ contract BurgerShop{
         require(msg.value >= _cost, "Not enough Ether!");
         _;
     }
-
+    
     // title allows the user to buy a normal Burger only
     // inherits the shouldPay modifier and takes the parameter of normalCost
-    function buyBurger() payable public shouldPay(normalCost){
+    function buyBurger() payable public shouldPay(normalCost) isInStage(Stages.orderReady){
         emit bugerBought(msg.sender, normalCost);
     }
 
     // allows the user to buy the deluxe burger only
     // inherits the shouldPay modifier
     // @param1 only takes the price of a deluxe burger
-    function buydeluxeBurger() payable public shouldPay(deluxeCost){
+    function buydeluxeBurger() payable public shouldPay(deluxeCost) isInStage(Stages.orderReady){
         emit bugerBought(msg.sender, deluxeCost);
     }
 
